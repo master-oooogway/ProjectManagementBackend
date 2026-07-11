@@ -6,12 +6,28 @@ import {emailVerificationMailgenContent, forgotPasswordMailgenContent, sendEmail
 import { signedCookie } from "cookie-parser";
 import jwt, { decode } from "jsonwebtoken";
 
+/**
+ * Not imported
+ */
 const generateAccessAndRefreshToken = async (userId)=>{
     try{
         const user = await User.findById(userId);
+
+        //short lived authentication token 15min, 30min, 1hr
         const accessToken = user.generateAccessToken();
+
+        //long lived token
+        /**
+         * access token expired -> user logged out
+         * bad experience!
+         * refresh token generates new access token without asking user to login again
+         * stored in db
+         * 
+         */
         const refreshToken = user.generateRefreshToken();
         user.refreshToken = refreshToken;
+
+        //no need to validate everything
         await user.save({validateBeforeSave: false})
         return {accessToken, refreshToken}
     }catch(err){
@@ -19,9 +35,17 @@ const generateAccessAndRefreshToken = async (userId)=>{
     }   
 }
 
+
+/**
+ * Registration pipeline
+ * validate request -> check existing user -> create user -> generate email token -> save token -> send email -> return user
+ */
 const registerUser = asyncHandler(async (req, res) => {
-    const {email, username, password, role}= req.body
+
+    //destructuring some fields
+    const {email, username, password}= req.body
     const existedUser = await User.findOne({
+        //mongoDB operator-> means username matches or email matches
         $or: [{username}, {email}]
     })
     if(existedUser)
@@ -29,6 +53,9 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(409, "User with email or username already exists", [])
     }
 
+    /**
+     * create user-> pre("save")-> password hash-> db
+     */
     const user = await User.create({
         email,
         password,
@@ -36,21 +63,35 @@ const registerUser = asyncHandler(async (req, res) => {
         isEmailVerified: false
     })
 
+    /**
+     * unHashed -> sent to user
+     * hasesh-> stored in database
+     * 
+     * When user clicks email:
+     * Incoming token-> hash again-> compare
+     */
     const {unHashedToken, hashedToken, tokenExpiry}= user.generateTemporaryToken();
     user.emailVerificationToken = hashedToken;
     user.emailVerificationExpiry = tokenExpiry;
     await user.save({validateBeforeSave: false})
 
+    /**
+     * To deliver verification link
+     */
     await sendEmail(
         {
             email: user?.email,
             subject: "Please verify your email",
             mailgenContent: emailVerificationMailgenContent(
+
+                //dynamic url generation used
                 user.username,
                 `${req.protocol}://${req.get("host")}/api/v1/users/verify-email/${unHashedToken}`
             )
         }
     )
+
+    // exclude some sensitive field before sending response
     const createdUser = await User.findById(user._id).select(
         "-password -refreshToken -emailVerificationToken -emailVerificationExpiry"
     )
@@ -68,6 +109,10 @@ const registerUser = asyncHandler(async (req, res) => {
         )
 })
 
+
+/**
+ * email, password-> find user-> compare password-> generate tokens-> store refresh token-> cookies-> response
+ */
 const login = asyncHandler(async (req, res) => {
 
     const {email, password, username} = req.body
@@ -75,11 +120,14 @@ const login = asyncHandler(async (req, res) => {
     if(!email){
         throw new ApiError(400, "Email is required")
     }
+
+    //check if user is registered or not
     const user = await User.findOne({email});
     if(!user){
         throw new ApiError(400, "User does not exists");
     }
     
+    //password in db is equal to password passed here?
     const isPasswordValid = await user.isPasswordCorrect(password);
     if(!isPasswordValid){
         throw new ApiError(400, "Invalid credentials");
@@ -87,6 +135,8 @@ const login = asyncHandler(async (req, res) => {
 
     const {accessToken, refreshToken} = await generateAccessAndRefreshToken(user._id)
 
+
+    //removing sensitive information before sending response
     const loggedInUser = await User.findById(user._id).select("-password -refreshToken -emailVerificationToken -emailVerificationExpiry")
 
     //SEND TOKENS AS COOKIES
@@ -112,6 +162,9 @@ const login = asyncHandler(async (req, res) => {
         )
 });
 
+/**
+ * Logged in user-> delete refresh token -> clear cookies -> done
+ */
 const logoutUser = asyncHandler(async (req, res) => {
     await User.findByIdAndUpdate(
         req.user._id,
@@ -149,6 +202,9 @@ const getCurrentUser = asyncHandler(async (req, res) => {
         )
 })
 
+/**
+ * verfication link->extract token -> hash token -> find user -> mark verified
+ */
 const verifyEmail = asyncHandler(async (req, res) => {
 
     //this is the only new line...req.params = unhashed token
@@ -162,7 +218,7 @@ const verifyEmail = asyncHandler(async (req, res) => {
         .update(verificationToken)
         .digest("hex")
 
-    await User.findOne({
+    const user = await User.findOne({
         emailVerificationToken: hashedToken,
         emailVerificationExpiry: {$gt: Date.now()}
     })
@@ -191,6 +247,10 @@ const verifyEmail = asyncHandler(async (req, res) => {
         )
 })
 
+
+/**
+ * logged in user-> generate token-> save token-> send email again
+ */
 const resendEmailVerification = asyncHandler(async (req, res) => {
     const user = await User.findById(req.user?._id);
 
@@ -226,6 +286,10 @@ const resendEmailVerification = asyncHandler(async (req, res) => {
         )
 });
 
+
+/**
+ * refresh token-> verify jwt-> find user-> compare db token-> generate new tokens-> return new tokens
+ */
 const refreshAccessToken = asyncHandler(async( req, res ) => {
     const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
     if(!incomingRefreshToken){
@@ -233,7 +297,7 @@ const refreshAccessToken = asyncHandler(async( req, res ) => {
     }
     try{
         const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET)
-        const user = await User.findById(decodedToken?.id);
+        const user = await User.findById(decodedToken?._id);
         if(!user){
             throw new ApiError(401, "Invalid refresh token");
         }
@@ -266,6 +330,10 @@ const refreshAccessToken = asyncHandler(async( req, res ) => {
     }
 })
 
+
+/**
+ * enter email -> find user-> generate temporary token-> store hash -> send email
+ */
 const forgotPasswordRequest = asyncHandler(async (req, res) => {
     const {email} = req.body;
     const user = await User.findOne({email})
@@ -299,6 +367,11 @@ const forgotPasswordRequest = asyncHandler(async (req, res) => {
         )
 })
 
+
+/**
+ * user clicks email -> hash incoming token -> find user -> update password -> pre("save")
+ * bcrypt.hash()
+ */
 const resetForgotPassword = asyncHandler(async (req, res) => {
     const {resetToken} = req.params;
     const {newPassword} = req.body;
@@ -314,16 +387,17 @@ const resetForgotPassword = asyncHandler(async (req, res) => {
         })
 
         if(!user){
-            throw new ApiError(489, "The token is invalid or expired")
+            throw new ApiError(400, "The token is invalid or expired")
         }
         user.forgotPasswordExpiry=undefined;
         user.forgotPasswordToken=undefined;
 
         user.password = newPassword
+        //pre("save") will hash the password
         await user.save({validateBeforeSave: false})
 
         return res 
-            .statu(200)
+            .status(200)
             .json(
                 new ApiResponse(
                     200, 
@@ -335,6 +409,10 @@ const resetForgotPassword = asyncHandler(async (req, res) => {
             )
 })
 
+/**
+ * authenticated user -> check old password -> set new password -> pre("save")-> hash password -> save
+ * 
+ */
 const changeCurrentPassword = asyncHandler(async (req, res) => {
     const {oldPassword, newPassword} = req.body
     const user = await User.findById(req.user?._id)

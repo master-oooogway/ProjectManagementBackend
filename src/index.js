@@ -15,6 +15,8 @@ dotenv.config({
 
 const port = process.env.PORT || 3000;
 
+
+//connect database first and start the server
 connectDB()
     .then(() => {
         app.listen(port, () => {
