@@ -1,0 +1,475 @@
+You are a frontend engineer. Create a complete React + Vite + Tailwind CSS frontend for a Project Management Backend called Project Camp.
+
+Build the app exactly for this backend API shape and feature set, with modern dashboard design, clean spacing, cards, responsive layout, and a dark mode toggle.
+
+Important: provide step-by-step instructions, commands to run, file structure, code examples, and list every single page and feature. Make it spoon-feed us from empty folder to a working frontend.
+
+---
+
+## 1. Project Setup
+
+1. Create the Vite React app:
+   - `npm create vite@latest projectcamp-frontend -- --template react`
+   - `cd projectcamp-frontend`
+
+2. Install dependencies:
+   - `npm install axios react-router-dom clsx lucide-react`
+   - `npm install -D tailwindcss postcss autoprefixer`
+
+3. Initialize Tailwind:
+   - `npx tailwindcss init -p`
+
+4. Configure `tailwind.config.js`:
+   - Content should scan `index.html`, `src/**/*.{js,jsx}`.
+   - Enable dark mode on class.
+   - Example:
+     ```js
+     export default {
+       darkMode: "class",
+       content: ["./index.html", "./src/**/*.{js,jsx}"],
+       theme: {
+         extend: {
+           colors: {
+             brand: {
+               50: "#eef2ff",
+               100: "#e0e7ff",
+               500: "#6366f1",
+             },
+           },
+         },
+       },
+       plugins: [],
+     };
+     ```
+
+5. Configure `src/index.css`:
+   ```css
+   @tailwind base;
+   @tailwind components;
+   @tailwind utilities;
+
+   :root {
+     color-scheme: light;
+   }
+   .dark {
+     color-scheme: dark;
+   }
+
+   body {
+     @apply bg-slate-50 text-slate-900 antialiased;
+   }
+   .dark body {
+     @apply bg-slate-950 text-slate-100;
+   }
+
+   .card {
+     @apply rounded-3xl border border-slate-200/70 bg-white/90 shadow-lg backdrop-blur dark:border-slate-700/70 dark:bg-slate-900/80;
+   }
+   ```
+
+6. Update `src/main.jsx` to import `index.css`.
+
+---
+
+## 2. Environment
+
+Create `.env`:
+```
+VITE_API_BASE_URL=http://localhost:8080/api/v1
+```
+
+---
+
+## 3. App Pages
+
+Build these pages:
+
+- `Login`
+- `Register`
+- `Verify Email Success`
+- `Forgot Password`
+- `Reset Password`
+- `Resend Verification`
+- `Dashboard`
+- `Projects`
+- `Project Details`
+- `Create / Edit Project`
+- `Project Members`
+- `Tasks`
+- `Task Detail`
+- `Create / Edit Task`
+- `Subtasks`
+- `Notes`
+- `Note Detail`
+- `Health / Status`
+
+---
+
+## 4. Routes and Pages
+
+Create these React routes:
+
+- `/login`
+- `/register`
+- `/verify-email/:verificationToken`
+- `/forgot-password`
+- `/reset-password/:resetToken`
+- `/resend-verification`
+- `/dashboard`
+- `/projects`
+- `/projects/:projectId`
+- `/projects/:projectId/members`
+- `/projects/:projectId/tasks`
+- `/projects/:projectId/tasks/:taskId`
+- `/projects/:projectId/notes`
+
+---
+
+## 5. Backend API Endpoints to Implement
+
+### Auth
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/login`
+- `POST /api/v1/auth/logout`
+- `POST /api/v1/auth/current-user`
+- `POST /api/v1/auth/refresh-token`
+- `POST /api/v1/auth/change-password`
+- `GET /api/v1/auth/verify-email/:verificationToken`
+- `POST /api/v1/auth/forgot-password`
+- `POST /api/v1/auth/reset-password/:resetToken`
+- `POST /api/v1/auth/resend-email-verification`
+
+### Projects
+- `GET /api/v1/projects/`
+- `POST /api/v1/projects/`
+- `GET /api/v1/projects/:projectId`
+- `PUT /api/v1/projects/:projectId`
+- `DELETE /api/v1/projects/:projectId`
+- `GET /api/v1/projects/:projectId/members`
+- `POST /api/v1/projects/:projectId/members`
+- `PUT /api/v1/projects/:projectId/members/:userId`
+- `DELETE /api/v1/projects/:projectId/members/:userId`
+
+### Tasks
+- `GET /api/v1/tasks/:projectId`
+- `POST /api/v1/tasks/:projectId`
+- `GET /api/v1/tasks/:projectId/t/:taskId`
+- `PUT /api/v1/tasks/:projectId/t/:taskId`
+- `DELETE /api/v1/tasks/:projectId/t/:taskId`
+- `POST /api/v1/tasks/:projectId/t/:taskId/subtasks`
+- `PUT /api/v1/tasks/:projectId/st/:subTaskId`
+- `DELETE /api/v1/tasks/:projectId/st/:subTaskId`
+
+### Notes
+- `GET /api/v1/notes/:projectId`
+- `POST /api/v1/notes/:projectId`
+- `GET /api/v1/notes/:projectId/:noteId`
+- `PUT /api/v1/notes/:projectId/:noteId`
+- `DELETE /api/v1/notes/:projectId/:noteId`
+
+### Health
+- `GET /api/v1/healthcheck/`
+
+---
+
+## 6. UI / UX and Design Style
+
+Use modern dashboard styling:
+- sidebar with icons
+- top nav with search, user profile, dark mode toggle
+- cards for summary stats
+- tables or list cards for projects, tasks, notes
+- accent colors: violet / teal
+- rounded containers, softened shadows
+- clean typography
+- responsive mobile menu
+
+Dark mode:
+- use Tailwind `dark` class on `<html>` or `<body>`
+- save preference in localStorage
+- toggle button in topbar
+
+---
+
+## 7. Frontend Structure
+
+Create folders:
+- `src/api/`
+- `src/components/`
+- `src/pages/`
+- `src/routes/`
+- `src/context/`
+- `src/hooks/`
+- `src/utils/`
+
+Example files:
+- `src/api/axios.js`
+- `src/context/AuthContext.jsx`
+- `src/hooks/useAuth.js`
+- `src/routes/AppRoutes.jsx`
+- `src/pages/Login.jsx`
+- `src/pages/Register.jsx`
+- `src/pages/Dashboard.jsx`
+- `src/pages/Projects.jsx`
+- `src/pages/ProjectDetails.jsx`
+- `src/pages/TaskDetail.jsx`
+- `src/pages/Notes.jsx`
+- `src/components/Sidebar.jsx`
+- `src/components/Topbar.jsx`
+- `src/components/ProjectCard.jsx`
+- `src/components/TaskCard.jsx`
+- `src/components/NoteCard.jsx`
+- `src/components/FormField.jsx`
+- `src/components/ProtectedRoute.jsx`
+
+---
+
+## 8. API Helper Example
+
+Create `src/api/axios.js`:
+
+```js
+import axios from "axios";
+
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+  headers: {
+    "Content-Type": "application/json",
+  },
+  withCredentials: true,
+});
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("accessToken");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      originalRequest.url !== "/auth/refresh-token"
+    ) {
+      originalRequest._retry = true;
+      const refreshToken = localStorage.getItem("refreshToken");
+      if (refreshToken) {
+        const response = await api.post("/auth/refresh-token", { refreshToken });
+        const { accessToken, refreshToken: newRefreshToken } = response.data.data;
+        localStorage.setItem("accessToken", accessToken);
+        localStorage.setItem("refreshToken", newRefreshToken);
+        api.defaults.headers.Authorization = `Bearer ${accessToken}`;
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        return api(originalRequest);
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+export default api;
+```
+
+---
+
+## 9. Auth Context
+
+Create `src/context/AuthContext.jsx`:
+- store `user`
+- store `accessToken`, `refreshToken`
+- actions: `login`, `logout`, `register`, `refreshSession`, `fetchCurrentUser`
+
+---
+
+## 10. Page Behavior
+
+### Login page
+- fields: email, password
+- call `POST /api/v1/auth/login`
+- save tokens and user
+- redirect to `/dashboard`
+
+### Register page
+- fields: username, email, password
+- call `POST /api/v1/auth/register`
+- show success message
+- prompt email verification
+
+### Verify Email page
+- call `GET /api/v1/auth/verify-email/:verificationToken`
+- show confirmation message
+
+### Forgot Password
+- field: email
+- call `POST /api/v1/auth/forgot-password`
+
+### Reset Password
+- fields: new password, confirm password
+- call `POST /api/v1/auth/reset-password/:resetToken`
+
+### Resend Verification
+- call `POST /api/v1/auth/resend-email-verification`
+
+### Dashboard
+- show count of:
+  - accessible projects
+  - open tasks
+  - done tasks
+  - notes
+- show latest active projects / tasks
+- show user role summary
+
+### Projects page
+- list all projects from `GET /api/v1/projects/`
+- show project member count
+- allow create project modal:
+  - call `POST /api/v1/projects/`
+
+### Project Details
+- show project metadata
+- show member list from `GET /api/v1/projects/:projectId/members`
+- allow invite user:
+  - call `POST /api/v1/projects/:projectId/members`
+- allow update role:
+  - call `PUT /api/v1/projects/:projectId/members/:userId`
+- allow remove member:
+  - call `DELETE /api/v1/projects/:projectId/members/:userId`
+- allow edit project:
+  - call `PUT /api/v1/projects/:projectId`
+- allow delete project:
+  - call `DELETE /api/v1/projects/:projectId`
+
+### Tasks page
+- list project tasks: `GET /api/v1/tasks/:projectId`
+- create task form:
+  - `POST /api/v1/tasks/:projectId`
+  - fields: title, description, status, assignee
+- task cards with status badges
+- task filter by status
+
+### Task Detail
+- show task details from `GET /api/v1/tasks/:projectId/t/:taskId`
+- allow update:
+  - `PUT /api/v1/tasks/:projectId/t/:taskId`
+- allow delete:
+  - `DELETE /api/v1/tasks/:projectId/t/:taskId`
+- show subtasks list
+- create subtask:
+  - `POST /api/v1/tasks/:projectId/t/:taskId/subtasks`
+- update subtask:
+  - `PUT /api/v1/tasks/:projectId/st/:subTaskId`
+- delete subtask:
+  - `DELETE /api/v1/tasks/:projectId/st/:subTaskId`
+
+### Notes page
+- list notes: `GET /api/v1/notes/:projectId`
+- create note: `POST /api/v1/notes/:projectId`
+- note details: `GET /api/v1/notes/:projectId/:noteId`
+- update note: `PUT /api/v1/notes/:projectId/:noteId`
+- delete note: `DELETE /api/v1/notes/:projectId/:noteId`
+
+---
+
+## 11. UI Components
+
+Ask the AI to create reusable components:
+- `Button`
+- `Input`
+- `Select`
+- `Modal`
+- `PageHeader`
+- `StatCard`
+- `ProjectCard`
+- `TaskCard`
+- `NoteCard`
+- `MemberTable`
+- `DarkModeToggle`
+
+---
+
+## 12. Dark Mode
+
+Add:
+- `useDarkMode` hook
+- `ThemeProvider` or local storage theme saver
+- top-right toggle button
+- apply `document.documentElement.classList.toggle("dark", enabled)`
+
+---
+
+## 13. Smooth Behavior
+
+Ask the AI to include:
+- skeleton loaders
+- graceful error messages
+- toast notifications
+- form validation
+- loading state
+- redirect if unauthenticated
+- protect routes with `ProtectedRoute`
+
+---
+
+## 14. Modern Styling
+
+Use:
+- `font-family: Inter, system-ui, sans-serif`
+- gradients
+- subtle borders
+- glassy cards
+- consistent spacing
+- iconography from `lucide-react`
+
+---
+
+## 15. Final Deliverables
+
+The AI should return:
+- full `package.json`
+- `vite.config.js`
+- `tailwind.config.js`
+- `postcss.config.js`
+- `src/main.jsx`
+- `src/index.css`
+- `src/api/axios.js`
+- `src/context/AuthContext.jsx`
+- `src/routes/AppRoutes.jsx`
+- `src/App.jsx`
+- all page files
+- all component files
+- utilities for auth and API
+
+---
+
+## Notes for the AI
+
+- Use latest versions of React, Vite, Tailwind CSS
+- Use React Router v6
+- Use Tailwind dark mode
+- Do not skip any page required by the backend
+- Make the UI look modern and not ugly
+- Make sure auth works with JWT and refresh token support
+- Use the backend's current API endpoints and all features
+
+---
+
+## Summary
+
+This frontend must support:
+- full auth lifecycle
+- project CRUD
+- member management
+- task CRUD
+- subtask CRUD
+- notes CRUD
+- dashboard and project pages
+- responsive layout
+- dark mode
+- API connectivity using React + Vite + Tailwind CSS
+
+Paste the above prompt into the AI and ask it to generate the repo and code base step-by-step.

@@ -25,8 +25,8 @@ const sendEmail = async (options) => {
     })
 
     const mail = {
-        form: "mail.taskmanager@example.com",
-        to : options.email,
+        from: "mail.taskmanager@example.com",
+        to: options.email,
         subject: options.subject,
         text: emailTextual,
         html: emailHtml
@@ -49,10 +49,10 @@ const emailVerificationMailgenContent = (username, verificationUrl) => {
             name: username, 
             intro: "Welcome to our App!",
             action: {
-                introductions: "To verfiy your email please click on the following button",
+                instructions: "To verfiy your email please click on the following button",
                 button: {
                     color: "#772936",
-                    text: "Verify you email",
+                    text: "Verify your email",
                     link: verificationUrl
                 }
             },
@@ -67,11 +67,11 @@ const forgotPasswordMailgenContent = (username, passwordResetUrl) => {
         body: {
             name: username, 
             intro: "Request to reset password",
-            actions: {
-                introductions: "To reset your email please click on the following button",
+            action: {
+                instructions: "To reset your email please click on the following button",
                 button: {
                     color: "#8082ef",
-                    text: "Reset you password",
+                    text: "Reset your password",
                     link: passwordResetUrl
                 }
             },

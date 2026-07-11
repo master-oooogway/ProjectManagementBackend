@@ -3,8 +3,8 @@ import {ApiResponse} from "../utils/api-response.js"
 import {ApiError} from "../utils/api-error.js";
 import {asyncHandler} from "../utils/async-handler.js";
 import {emailVerificationMailgenContent, forgotPasswordMailgenContent, sendEmail} from "../utils/mail.js"
-import { signedCookie } from "cookie-parser";
-import jwt, { decode } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
+import crypto from "crypto";
 
 /**
  * Not imported
@@ -86,7 +86,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
                 //dynamic url generation used
                 user.username,
-                `${req.protocol}://${req.get("host")}/api/v1/users/verify-email/${unHashedToken}`
+                `${req.protocol}://${req.get("host")}/api/v1/auth/verify-email/${unHashedToken}`
             )
         }
     )
@@ -102,7 +102,7 @@ const registerUser = asyncHandler(async (req, res) => {
     return res
         .status(201)
         .json(
-            new ApiResponse(200,
+            new ApiResponse(201,
                 {user: createdUser}, 
                 "User registered successfully and verification email has been sent on your email"
             )
@@ -142,7 +142,8 @@ const login = asyncHandler(async (req, res) => {
     //SEND TOKENS AS COOKIES
     const options = {
         httpOnly: true,
-        secure: true
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax"
     }
 
     return res
@@ -270,7 +271,7 @@ const resendEmailVerification = asyncHandler(async (req, res) => {
             subject: "Please verify your email",
             mailgenContent: emailVerificationMailgenContent(
                 user.username,
-                `${req.protocol}://${req.get("host")}/api/v1/users/verify-email/${unHashedToken}`
+                `${req.protocol}://${req.get("host")}/api/v1/auth/verify-email/${unHashedToken}`
             )
         }
     )
@@ -315,8 +316,16 @@ const refreshAccessToken = asyncHandler(async( req, res ) => {
 
         return res
             .status(200)
-            .cookie("accessToken", accessToken)
-            .cookie("refreshToken", newRefreshToken)
+            .cookie("accessToken", accessToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax"
+            })
+            .cookie("refreshToken", newRefreshToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax"
+            })
             .json(
                 new ApiResponse(
                     200,
@@ -352,7 +361,7 @@ const forgotPasswordRequest = asyncHandler(async (req, res) => {
         subject: "Password reset request",
         mailgenContent: forgotPasswordMailgenContent(
             user.username,
-            `${process.env.FORGOT_PASSWORD_URL}/${unHashedToken}`,
+            `${process.env.FORGOT_PASSWORD_REDIRECT_URL}/${unHashedToken}`,
         )
     })
 

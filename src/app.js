@@ -66,7 +66,9 @@ app.use(cookieParser())
  * without first line: if env missing no crash
 */
 app.use(cors({
-    origin: process.env.CORS_ORIGIN?.split(",") || "http://localhost:5173",
+    origin: process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",")
+  : ["http://localhost:5173"],
 
     //allows: cookies, authorization headers, session data
     credentials: true,
@@ -84,12 +86,17 @@ app.use(cors({
 //health check route- checks whether the backend is alive
 import healthCheckRouter from "./routes/healthcheck.routes.js";
 import authRouter from "./routes/auth.routes.js";
-
+import projectRouter from "./routes/project.routes.js"
+import taskRouter from "./routes/task.routes.js"
+import noteRouter from "./routes/note.routes.js";
 //route registration
 
 
 app.use("/api/v1/healthcheck", healthCheckRouter);
 app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/projects", projectRouter);
+app.use("/api/v1/tasks", taskRouter);
+app.use("/api/v1/notes", noteRouter);
 
 
 /** 
