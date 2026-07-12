@@ -467,29 +467,37 @@ const getAllProjectMembers = asyncHandler(async (req, res) => {
 
 
 
-const updateMemberRole = asyncHandler(async(req, res) => {
-    const {projectId, userId} = req.params
-    const {newRole} = req.body
+const updateMemberRole = asyncHandler(async (req, res) => {
+    const { projectId, userId } = req.params;
+    const { newRole } = req.body;
 
     const safeProjectId = assertObjectId(projectId, "projectId");
     const safeUserId = assertObjectId(userId, "userId");
 
-
-    if(!AvailableUserRole.includes(newRole)){
-        throw new ApiError(400, "Invalid role")
+    if (!AvailableUserRole.includes(newRole)) {
+        throw new ApiError(400, "Invalid role");
     }
 
-    let projectMember = await ProjectMember.findOne({
+    // Prevent changing your own role
+    if (String(safeUserId) === String(req.user._id)) {
+        throw new ApiError(
+            400,
+            "You cannot change your own role"
+        );
+    }
+
+    const existingMember = await ProjectMember.findOne({
         project: safeProjectId,
         user: safeUserId
-    })
+    });
 
-    if(!projectMember){
-        throw new ApiError(400, "Project member not found");
+    if (!existingMember) {
+        throw new ApiError(404, "Project member not found");
     }
 
+    // Prevent demoting the last admin
     if (
-        projectMember.role === UserRolesEnum.ADMIN &&
+        existingMember.role === UserRolesEnum.ADMIN &&
         newRole !== UserRolesEnum.ADMIN
     ) {
         const adminCount = await ProjectMember.countDocuments({
@@ -505,22 +513,29 @@ const updateMemberRole = asyncHandler(async(req, res) => {
         }
     }
 
-    projectMember = await ProjectMember.findByIdAndUpdate(
-        projectMember._id,
+    const projectMember = await ProjectMember.findOneAndUpdate(
+        {
+            project: safeProjectId,
+            user: safeUserId
+        },
         {
             role: newRole
         },
-        {new: true}
-    )
-    if(!projectMember){
-        throw new ApiError(400, "Project member not found");
-    }
+        {
+            new: true
+        }
+    );
+
     return res
         .status(200)
         .json(
-            new ApiResponse(200, projectMember, "Project member role updated successfully")
-        )
-})
+            new ApiResponse(
+                200,
+                projectMember,
+                "Project member role updated successfully"
+            )
+        );
+});
 
 const deleteMember = asyncHandler(async(req, res) => {
     const {projectId, userId} = req.params
