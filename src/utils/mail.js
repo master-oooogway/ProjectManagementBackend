@@ -69,11 +69,16 @@ const emailVerificationMailgenContent = (username, otp) => {
     return {
         body: {
             name: username,
-            intro: `Welcome to ProjectCamp! Your verification code is ${otp}.`,
+            intro: `Welcome to ProjectCamp! Use the code below to verify your email.`,
             action: {
-                instructions: "Enter this code in the ProjectCamp verification screen. It expires in 10 minutes."
+                instructions: `Your verification code is: ${otp}`,
+                button: {
+                    color: "#8082ef",
+                    text: "Verify Email",
+                    link: `${process.env.FRONTEND_URL || "http://localhost:5173"}/verify-email-otp`
+                }
             },
-            outro: "If you did not create an account, please ignore this email.",
+            outro: "This code expires in 10 minutes. If you did not create an account, please ignore this email.",
         }
     }
 }
