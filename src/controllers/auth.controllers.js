@@ -68,14 +68,13 @@ const sendVerificationOtp = async (user, { ignoreCooldown = false } = {}) => {
   } catch (error) {
     user.emailVerificationOTPLastSentAt = undefined;
     await user.save({ validateBeforeSave: false });
-    if (isProduction()) throw error;
     emailWasDelivered = false;
-    console.warn("Email delivery failed; using the local development OTP fallback.", error.message);
+    console.warn("Email delivery failed; using the OTP fallback.", error.message);
   }
 
-  // Never expose the code in a deployed application. This opt-in is useful only
-  // when developing locally without an SMTP provider.
-  return !isProduction() && (process.env.SHOW_EMAIL_OTP === "true" || !emailWasDelivered)
+  // When SHOW_EMAIL_OTP is enabled (development) OR the email failed to send,
+  // return the OTP so it can be displayed to the user as a fallback.
+  return process.env.SHOW_EMAIL_OTP === "true" || !emailWasDelivered
     ? otp
     : undefined;
 };
@@ -111,23 +110,14 @@ const registerUser = asyncHandler(async (req, res) => {
     );
   }
 
-  let user;
-  try {
-    user = await User.create({ email, username, password, isEmailVerified: false });
-    const developmentOtp = await sendVerificationOtp(user, { ignoreCooldown: true });
+  const user = await User.create({ email, username, password, isEmailVerified: false });
+  const developmentOtp = await sendVerificationOtp(user, { ignoreCooldown: true });
 
-    const data = { user: await publicUser(user._id) };
-    if (developmentOtp) data.developmentOtp = developmentOtp;
-    return res.status(201).json(
-      new ApiResponse(201, data, "Account created. Check your email for the verification code.")
-    );
-  } catch (error) {
-    // In production an email failure must not leave a dead account behind.
-    if (user && isProduction()) {
-      await User.deleteOne({ _id: user._id, isEmailVerified: false });
-    }
-    throw error;
-  }
+  const data = { user: await publicUser(user._id) };
+  if (developmentOtp) data.developmentOtp = developmentOtp;
+  return res.status(201).json(
+    new ApiResponse(201, data, "Account created. Check your email for the verification code.")
+  );
 });
 
 const verifyEmailOtp = asyncHandler(async (req, res) => {

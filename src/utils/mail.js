@@ -35,6 +35,10 @@ const sendEmail = async (options) => {
         tls: {
             rejectUnauthorized: process.env.SMTP_REJECT_UNAUTHORIZED !== "false",
         },
+        // Short timeouts to prevent the request from hanging forever
+        connectionTimeout: 5000,
+        greetingTimeout: 5000,
+        socketTimeout: 10000,
     };
 
     if (service) {
@@ -58,7 +62,6 @@ const sendEmail = async (options) => {
     }
 
     try {
-        await transporter.verify();
         await transporter.sendMail(mail);
     } catch (err) {
         console.error("Email service failed:", err);
