@@ -14,16 +14,18 @@ const sendEmail = async (options) => {
 
     const emailHtml = mailGenerator.generate(options.mailgenContent)
 
+    // Determine which email provider to use
+    const useSendGrid = process.env.SENDGRID_API_KEY ? true : false;
     const service = process.env.SMTP_SERVICE;
-    const host = process.env.SMTP_HOST || "smtp.gmail.com";
-    const port = Number(process.env.SMTP_PORT || 587);
-    const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS;
+    const host = useSendGrid ? "smtp.sendgrid.net" : (process.env.SMTP_HOST || "smtp.gmail.com");
+    const port = Number(useSendGrid ? 587 : (process.env.SMTP_PORT || 587));
+    const user = useSendGrid ? "apikey" : process.env.SMTP_USER;
+    const pass = useSendGrid ? process.env.SENDGRID_API_KEY : process.env.SMTP_PASS;
     const secure = process.env.SMTP_SECURE === "true" || port === 465;
 
     if (!user || !pass || !host) {
         throw new Error(
-            "SMTP is not configured correctly. Set SMTP_USER and SMTP_PASS in your .env file."
+            "SMTP is not configured correctly. Set SMTP_USER and SMTP_PASS for Gmail or SENDGRID_API_KEY for SendGrid."
         );
     }
 
