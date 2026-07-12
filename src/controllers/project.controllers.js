@@ -160,7 +160,7 @@ const updateProject = asyncHandler(async(req, res) => {
     const { projectId } = req.params;
 
     const safeProjectId = assertObjectId(projectId, "projectId");
-    
+
     const project = await Project.findByIdAndUpdate(
         safeProjectId,
         {
@@ -429,6 +429,20 @@ const deleteMember = asyncHandler(async(req, res) => {
         user: safeUserId
     })
 
+    if (projectMember.role === UserRolesEnum.ADMIN) {
+
+        const adminCount = await ProjectMember.countDocuments({
+            project: safeProjectId,
+            role: UserRolesEnum.ADMIN
+        });
+    
+        if (adminCount <= 1) {
+            throw new ApiError(
+                400,
+                "Cannot remove the last admin from the project"
+            );
+        }
+    }
     if(!projectMember){
         throw new ApiError(400, "Project member not found");
     }
