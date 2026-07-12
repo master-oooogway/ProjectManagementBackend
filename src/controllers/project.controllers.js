@@ -122,34 +122,55 @@ const getProjectById = asyncHandler(async(req, res) => {
         )
 })
 
-const createProject = asyncHandler(async(req, res) => {
-    //take name and description form req.body
-    const {name, description} = req.body
+const createProject = asyncHandler(async (req, res) => {
+    const { name, description } = req.body;
 
-    const project = await Project.create({
-        name,description,
-        //assign who created the project
-        createdBy: new mongoose.Types.ObjectId(req.user._id),
-    })
+    const session = await mongoose.startSession();
 
-    //
-    await ProjectMember.create({
-        user: new mongoose.Types.ObjectId(req.user._id),
-        project: new mongoose.Types.ObjectId(project._id),
-        //Only admin can create projects
-        role: UserRolesEnum.ADMIN
-    })
+    let createdProject;
+
+    try {
+        await session.withTransaction(async () => {
+
+            const projects = await Project.create(
+                [
+                    {
+                        name,
+                        description,
+                        createdBy: req.user._id
+                    }
+                ],
+                { session }
+            );
+
+            createdProject = projects[0];
+
+            await ProjectMember.create(
+                [
+                    {
+                        user: req.user._id,
+                        project: createdProject._id,
+                        role: UserRolesEnum.ADMIN
+                    }
+                ],
+                { session }
+            );
+        });
+
+    } finally {
+        await session.endSession();
+    }
 
     return res
         .status(201)
         .json(
             new ApiResponse(
                 201,
-                project,
+                createdProject,
                 "Project Created Successfully"
             )
-        )
-})
+        );
+});
 
 const updateProject = asyncHandler(async(req, res) => {
 
