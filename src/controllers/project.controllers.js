@@ -537,31 +537,31 @@ const updateMemberRole = asyncHandler(async (req, res) => {
         );
 });
 
-const deleteMember = asyncHandler(async(req, res) => {
-    const {projectId, userId} = req.params
+const deleteMember = asyncHandler(async (req, res) => {
+    const { projectId, userId } = req.params;
 
     const safeProjectId = assertObjectId(projectId, "projectId");
     const safeUserId = assertObjectId(userId, "userId");
 
-    if (String(safeUserId) === String(req.user._id)) {
-        throw new ApiError(
-            400,
-            "You cannot change your own role"
-        );
-    }
-    let projectMember = await ProjectMember.findOne({
-        project: safeProjectId,
-        user: safeUserId
-    })
-
+    // Prevent removing yourself
     if (String(safeUserId) === String(req.user._id)) {
         throw new ApiError(
             400,
             "You cannot remove yourself from the project"
         );
     }
-    if (projectMember.role === UserRolesEnum.ADMIN) {
 
+    const existingMember = await ProjectMember.findOne({
+        project: safeProjectId,
+        user: safeUserId
+    });
+
+    if (!existingMember) {
+        throw new ApiError(404, "Project member not found");
+    }
+
+    // Prevent removing the last admin
+    if (existingMember.role === UserRolesEnum.ADMIN) {
         const adminCount = await ProjectMember.countDocuments({
             project: safeProjectId,
             role: UserRolesEnum.ADMIN
@@ -574,23 +574,22 @@ const deleteMember = asyncHandler(async(req, res) => {
             );
         }
     }
-    if(!projectMember){
-        throw new ApiError(400, "Project member not found");
-    }
 
+    const deletedMember = await ProjectMember.findOneAndDelete({
+        project: safeProjectId,
+        user: safeUserId
+    });
 
-    projectMember = await ProjectMember.findByIdAndDelete(
-        projectMember._id
-    )
-    if(!projectMember){
-        throw new ApiError(400, "Project member not found");
-    }
     return res
         .status(200)
         .json(
-            new ApiResponse(200, projectMember, "Project member deleted successfully")
-        )
-})
+            new ApiResponse(
+                200,
+                deletedMember,
+                "Project member deleted successfully"
+            )
+        );
+});
 
 
 export {
