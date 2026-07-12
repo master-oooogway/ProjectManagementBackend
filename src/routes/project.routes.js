@@ -6,7 +6,9 @@ import {
   getProjects,
   getProjectById,
   getProjectMembers,
+  getAllProjectMembers,
   updateProject,
+
   deleteProject,
   updateMemberRole,
 } from "../controllers/project.controllers.js";
@@ -49,6 +51,11 @@ router
     validate,
     addMembersToProject,
   );
+
+router
+  .route("/members")
+  .get(getAllProjectMembers);
+
 
 router
   .route("/:projectId/members/:userId")

@@ -244,7 +244,8 @@ const getProjectMembers = asyncHandler(async(req, res) => {
                     {
                         $project: {
                             _id: 1,
-                            username: 1,    
+                            username: 1,
+                            email: 1,
                             fullName: 1,
                             avatar: 1
                         }
@@ -276,6 +277,79 @@ const getProjectMembers = asyncHandler(async(req, res) => {
             new ApiResponse(200, projectMembers, "Project members fetched")
         )
 })
+
+const getAllProjectMembers = asyncHandler(async (req, res) => {
+    const projectMembers = await ProjectMember.aggregate([
+        {
+            $lookup: {
+                from: "users",
+                localField: "user",
+                foreignField: "_id",
+                as: "user",
+                pipeline: [
+                    {
+                        $project: {
+                            _id: 1,
+                            username: 1,
+                            email: 1,
+                            fullName: 1,
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $addFields: {
+                user: {
+                    $arrayElemAt: ["$user", 0]
+                }
+            }
+        },
+        {
+            $lookup: {
+                from: "projects",
+                localField: "project",
+                foreignField: "_id",
+                as: "project",
+                pipeline: [
+                    {
+                        $project: {
+                            _id: 1,
+                            name: 1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $addFields: {
+                project: {
+                    $arrayElemAt: ["$project", 0]
+                }
+            }
+        },
+        {
+            $project: {
+                _id: 0,
+                userId: "$user._id",
+                name: { $ifNull: ["$user.fullName", "$user.username"] },
+                email: "$user.email",
+                projectId: "$project._id",
+                projectName: "$project.name",
+                role: 1,
+                createdAt: 1,
+                updatedAt: 1
+            }
+        }
+    ])
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200, projectMembers, "All project members fetched")
+        )
+})
+
 
 const updateMemberRole = asyncHandler(async(req, res) => {
     const {projectId, userId} = req.params
@@ -345,6 +419,7 @@ export {
     deleteMember,
     getProjectById,
     getProjectMembers,
+    getAllProjectMembers,
     getProjects,
     updateProject,
     updateMemberRole
