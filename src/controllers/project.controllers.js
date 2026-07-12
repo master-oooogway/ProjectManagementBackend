@@ -192,9 +192,9 @@ const deleteProject = asyncHandler(async(req, res) => {
 const addMembersToProject = asyncHandler(async(req, res) => {
     const {email, role} = req.body
     const {projectId } = req.params
-    const user = await User.findOne({email})
-    if(!user){
-        throw new ApiError(404, "User does not exists")
+    const user = await User.findOne({email});
+    if (!user) {
+        throw new ApiError(404, "No account found with this email. Ask your teammate to register first.");
     }
 
     await ProjectMember.findOneAndUpdate(

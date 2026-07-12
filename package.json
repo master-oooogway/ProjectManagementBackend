@@ -1,7 +1,7 @@
 {
-  "name": "projectmanagementbackend",
+  "name": "projectcamp-backend",
   "version": "1.0.0",
-  "description": "My first project management backend project",
+  "description": "ProjectCamp backend API for project, task, note, and user management",
   "keywords": [
     "Learning",
     "from",

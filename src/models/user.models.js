@@ -132,6 +132,23 @@ const userSchema = new Schema(
         //store expiration above token
         emailVerificationExpiry: {
             type: Date
+        },
+
+        emailVerificationOTP: {
+            type: String
+        },
+
+        emailVerificationOTPExpiry: {
+            type: Date
+        },
+
+        emailVerificationOTPAttempts: {
+            type: Number,
+            default: 0
+        },
+
+        emailVerificationOTPLastSentAt: {
+            type: Date
         }
     }, {
         /**
@@ -231,6 +248,12 @@ userSchema.methods.generateTemporaryToken = function(){
     return {unHashedToken, hashedToken, tokenExpiry}
 };
 
+userSchema.methods.generateEmailVerificationOTP = function(){
+    const otp = crypto.randomInt(100000, 1000000).toString();
+    const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex")
+    const otpExpiry = Date.now() + (20 * 60 * 1000) //20 mins
+    return {otp, hashedOtp, otpExpiry}
+};
 
 /**
  * now mongoose will create a model with name: User

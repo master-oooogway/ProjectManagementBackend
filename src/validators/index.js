@@ -23,17 +23,20 @@ const userRegisterValidator = () => {
             .notEmpty()
                 .withMessage("Username is required")
 
-            .isLowercase()
-                .withMessage("Username is required")
-
-            .isLength({min: 3})
-                .withMessage("Username must be at least 3 characters long"),
+            .isLength({min: 3, max: 30})
+                .withMessage("Username must be between 3 and 30 characters")
+            .matches(/^[a-zA-Z0-9_]+$/)
+                .withMessage("Username can use letters, numbers, and underscores only"),
 
         body("password")
             .trim()
 
-            .notEmpty()
-                .withMessage("Password is required"),
+            .isLength({min: 8, max: 72})
+                .withMessage("Password must be between 8 and 72 characters")
+            .matches(/[A-Za-z]/)
+                .withMessage("Password must include a letter")
+            .matches(/\d/)
+                .withMessage("Password must include a number"),
         
         body("fullname")
             .optional()
@@ -47,13 +50,31 @@ const userRegisterValidator = () => {
 const userLoginValidator = () => {
     return [
         body("email")
-            .optional()
+            .notEmpty()
+                .withMessage("Email is required")
             .isEmail()
                 .withMessage("Email is invalid"),
         body("password")
             .notEmpty()
-                .withMessage("Password is requried")
+                .withMessage("Password is required")
     ]
+}
+
+const userLoginOtpValidator = () => {
+    return [
+        body("email")
+            .notEmpty()
+            .withMessage("Email is required")
+            .isEmail()
+            .withMessage("Email is invalid"),
+        body("otp")
+            .notEmpty()
+            .withMessage("OTP is required")
+            .isLength({ min: 6, max: 6 })
+            .withMessage("OTP must be 6 digits")
+            .isNumeric()
+            .withMessage("OTP must contain digits only")
+    ];
 }
 
 const userChangeCurrentPasswordValidator = () => {
@@ -62,7 +83,12 @@ const userChangeCurrentPasswordValidator = () => {
             .notEmpty().withMessage("Old password is required"),
         
         body("newPassword")
-            .notEmpty().withMessage("New password cannot be empty")
+            .isLength({min: 8, max: 72})
+            .withMessage("Password must be between 8 and 72 characters")
+            .matches(/[A-Za-z]/)
+            .withMessage("Password must include a letter")
+            .matches(/\d/)
+            .withMessage("Password must include a number")
     ]
 }
 
@@ -77,7 +103,12 @@ const userForgotPasswordValidator = () => {
 const userResetForgotPasswordValidator = () => {
     return [
         body("newPassword")
-            .notEmpty(). withMessage("Password is required")
+            .isLength({min: 8, max: 72})
+            .withMessage("Password must be between 8 and 72 characters")
+            .matches(/[A-Za-z]/)
+            .withMessage("Password must include a letter")
+            .matches(/\d/)
+            .withMessage("Password must include a number")
     ]
 }
 
@@ -106,6 +137,12 @@ const addMembertoProjectValidator = () => {
 };
 
 export{
-    userRegisterValidator, userLoginValidator, userChangeCurrentPasswordValidator, userForgotPasswordValidator,userResetForgotPasswordValidator
-    ,createProjectValidator, addMembertoProjectValidator
+    userRegisterValidator,
+    userLoginValidator,
+    userLoginOtpValidator,
+    userChangeCurrentPasswordValidator,
+    userForgotPasswordValidator,
+    userResetForgotPasswordValidator,
+    createProjectValidator,
+    addMembertoProjectValidator
 }

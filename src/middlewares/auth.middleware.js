@@ -41,12 +41,6 @@ export const verifyJWT = asyncHandler(async(req, res, next)=>{
      */
     const token = req.cookies?.accessToken || req.header("Authorization")?. replace("Bearer ","")
 
-    //debug logs
-    //removed while on production
-    console.log("Cookies:", req.cookies);
-    console.log("Auth Header:", req.header("Authorization"));
-
-
     if(!token){
         /**user not logged in or token expired or frontend forgot to send cookie */
         throw new ApiError(401, "Unauthorized request");
@@ -61,7 +55,7 @@ export const verifyJWT = asyncHandler(async(req, res, next)=>{
         /**
          * negative selection is used to prevent forwarding sensitive data
          */
-        const user = await User.findById(decodedToken?._id).select("-password -refreshToken -emailVerificationToken -emailVerificationExpiry");
+        const user = await User.findById(decodedToken?._id).select("-password -refreshToken -forgotPasswordToken -forgotPasswordExpiry -emailVerificationToken -emailVerificationExpiry -emailVerificationOTP -emailVerificationOTPExpiry -emailVerificationOTPAttempts -emailVerificationOTPLastSentAt");
         if(!user){
             throw new ApiError(401, "Invalid access token");
         }

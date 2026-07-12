@@ -24,6 +24,7 @@ import cors from "cors";
 * Very important for JWT authentication.
 */
 import cookieParser from "cookie-parser";
+import { ApiError } from "./utils/api-error.js";
 
 /*
  * For creating express app
@@ -31,6 +32,7 @@ import cookieParser from "cookie-parser";
  * Inside app: routes, middlewares, request handlers, configurations
 */
 const app = express();
+app.set("trust proxy", 1);
 
 //basic configurations
 /** 
@@ -66,9 +68,14 @@ app.use(cookieParser())
  * without first line: if env missing no crash
 */
 app.use(cors({
-    origin: process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(",")
-  : ["http://localhost:5173"],
+    origin(origin, callback) {
+      const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173")
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean);
+      if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(new ApiError(403, "Origin is not allowed by CORS"));
+    },
 
     //allows: cookies, authorization headers, session data
     credentials: true,
@@ -98,6 +105,23 @@ app.use("/api/v1/projects", projectRouter);
 app.use("/api/v1/tasks", taskRouter);
 app.use("/api/v1/notes", noteRouter);
 
+app.use((req, res, next) => {
+  next(new ApiError(404, "Resource not found"));
+});
+
+app.use((err, req, res, next) => {
+  if (!(err instanceof ApiError)) {
+    err = new ApiError(err.statusCode || 500, err.message || "Internal server error");
+  }
+
+  res.status(err.statusCode).json({
+    success: false,
+    message: err.message,
+    statusCode: err.statusCode,
+    errors: err.errors || [],
+  });
+});
+
 
 /** 
  * GET: Used to fetch data
@@ -107,8 +131,6 @@ app.use("/api/v1/notes", noteRouter);
 
 
 
-app.get("/", (req, res) => {
-    res.send("Welcome to app.js");
-});
+app.get("/", (req, res) => res.json({ success: true, message: "ProjectCamp API is running" }));
 
 export default app;
