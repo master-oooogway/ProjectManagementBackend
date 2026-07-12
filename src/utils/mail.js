@@ -1,4 +1,5 @@
 import Mailgen from "mailgen";
+import sgMail from "@sendgrid/mail";
 import nodemailer from "nodemailer";
 
 const sendEmail = async (options) => {
@@ -14,18 +15,38 @@ const sendEmail = async (options) => {
 
     const emailHtml = mailGenerator.generate(options.mailgenContent)
 
-    // Determine which email provider to use
-    const useSendGrid = process.env.SENDGRID_API_KEY ? true : false;
+    // Prefer SendGrid web API (port 443/HTTPS) — always works on Render
+    if (process.env.SENDGRID_API_KEY) {
+        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+        const msg = {
+            to: options.email,
+            from: process.env.EMAIL_FROM || process.env.SMTP_USER || "ProjectCamp <noreply@ssipmt.com>",
+            subject: options.subject,
+            text: emailTextual,
+            html: emailHtml,
+        };
+
+        try {
+            await sgMail.send(msg);
+            return;
+        } catch (err) {
+            console.error("SendGrid API failed:", err.response?.body || err.message);
+            throw new Error("Email delivery failed via SendGrid. Check your SENDGRID_API_KEY.");
+        }
+    }
+
+    // Fallback: Use SMTP (for local development)
     const service = process.env.SMTP_SERVICE;
-    const host = useSendGrid ? "smtp.sendgrid.net" : (process.env.SMTP_HOST || "smtp.gmail.com");
-    const port = Number(useSendGrid ? 587 : (process.env.SMTP_PORT || 587));
-    const user = useSendGrid ? "apikey" : process.env.SMTP_USER;
-    const pass = useSendGrid ? process.env.SENDGRID_API_KEY : process.env.SMTP_PASS;
+    const host = process.env.SMTP_HOST || "smtp.gmail.com";
+    const port = Number(process.env.SMTP_PORT || 587);
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASS;
     const secure = process.env.SMTP_SECURE === "true" || port === 465;
 
     if (!user || !pass || !host) {
         throw new Error(
-            "SMTP is not configured correctly. Set SMTP_USER and SMTP_PASS for Gmail or SENDGRID_API_KEY for SendGrid."
+            "No email provider configured. Set SENDGRID_API_KEY for SendGrid or SMTP_USER/SMTP_PASS for local SMTP."
         );
     }
 
@@ -37,15 +58,12 @@ const sendEmail = async (options) => {
         tls: {
             rejectUnauthorized: process.env.SMTP_REJECT_UNAUTHORIZED !== "false",
         },
-        // Short timeouts to prevent the request from hanging forever
         connectionTimeout: 5000,
         greetingTimeout: 5000,
         socketTimeout: 10000,
     };
 
     if (service) {
-        // When service is set (e.g. "gmail"), nodemailer uses its built-in defaults.
-        // Do NOT override host/port manually to avoid conflicts.
         transporterOptions.service = service;
     } else {
         transporterOptions.host = host;
@@ -66,7 +84,7 @@ const sendEmail = async (options) => {
     try {
         await transporter.sendMail(mail);
     } catch (err) {
-        console.error("Email service failed:", err);
+        console.error("SMTP delivery failed:", err);
         throw new Error("Email delivery failed. Check SMTP configuration and credentials.");
     }
 }
