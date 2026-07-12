@@ -8,6 +8,8 @@ import {asyncHandler} from "../utils/async-handler.js";
 
 import mongoose from "mongoose";
 import { AvailableUserRole, UserRolesEnum } from "../utils/constants.js";
+import { assertObjectId } from "../utils/objectid.js";
+
 
 
 const getProjects = asyncHandler(async(req, res) => {
@@ -104,10 +106,12 @@ const getProjects = asyncHandler(async(req, res) => {
 
 const getProjectById = asyncHandler(async(req, res) => {
     const {projectId} = req.params
-    const project = await Project.findById(projectId)
+    const safeProjectId = assertObjectId(projectId, "projectId");
+    const project = await Project.findById(safeProjectId)
     if(!project){
         throw new ApiError(404, "Project not found")
     }
+
     return res
         .status(200)
         .json(
@@ -192,7 +196,9 @@ const deleteProject = asyncHandler(async(req, res) => {
 const addMembersToProject = asyncHandler(async(req, res) => {
     const {email, role} = req.body
     const {projectId } = req.params
+    const safeProjectId = assertObjectId(projectId, "projectId");
     const user = await User.findOne({email});
+
     if (!user) {
         throw new ApiError(404, "No account found with this email. Ask your teammate to register first.");
     }
@@ -200,11 +206,12 @@ const addMembersToProject = asyncHandler(async(req, res) => {
     await ProjectMember.findOneAndUpdate(
         {
             user: new mongoose.Types.ObjectId(user._id),
-            project: new mongoose.Types.ObjectId(projectId)
+            project: safeProjectId
         },
         {
             user: new mongoose.Types.ObjectId(user._id),
-            project: new mongoose.Types.ObjectId(projectId),
+            project: safeProjectId,
+
             role: role
         },
         {
@@ -223,7 +230,9 @@ const addMembersToProject = asyncHandler(async(req, res) => {
 
 const getProjectMembers = asyncHandler(async(req, res) => {
     const {projectId}= req.params
-    const project = await Project.findById(projectId)
+    const safeProjectId = assertObjectId(projectId, "projectId");
+    const project = await Project.findById(safeProjectId)
+
     if(!project){
         throw new ApiError(404, "Project not found")
     }

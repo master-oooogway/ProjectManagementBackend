@@ -13,6 +13,9 @@ import mongoose from "mongoose"
  */
 import {User} from "../models/user.models.js"
 import { ProjectMember } from "../models/projectmember.models.js"
+import mongoose from "mongoose";
+import { assertObjectId } from "../utils/objectid.js";
+
 
 //Custom error class
 import { ApiError } from "../utils/api-error.js"
@@ -77,10 +80,15 @@ export const validateProjectPermission = (roles = []) => {
       throw new ApiError(400, "project id is missing");
     }
 
+    // Prevent Mongoose ObjectId cast errors
+    const projectObjectId = assertObjectId(projectId, "projectId");
+    const userObjectId = assertObjectId(req.user?._id, "userId");
+
     const project = await ProjectMember.findOne({
-      project: new mongoose.Types.ObjectId(projectId),
-      user: new mongoose.Types.ObjectId(req.user._id),
+      project: projectObjectId,
+      user: userObjectId,
     });
+
 
     if (!project) {
       throw new ApiError(400, "project not found");
