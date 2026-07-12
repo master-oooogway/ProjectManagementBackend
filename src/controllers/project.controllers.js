@@ -365,18 +365,23 @@ const updateMemberRole = asyncHandler(async(req, res) => {
     const {projectId, userId} = req.params
     const {newRole} = req.body
 
+    const safeProjectId = assertObjectId(projectId, "projectId");
+    const safeUserId = assertObjectId(userId, "userId");
+
+
     if(!AvailableUserRole.includes(newRole)){
         throw new ApiError(400, "Invalid role")
     }
 
     let projectMember = await ProjectMember.findOne({
-        project: new mongoose.Types.ObjectId(projectId),
-        user: new mongoose.Types.ObjectId(userId)
+        project: safeProjectId,
+        user: safeUserId
     })
 
     if(!projectMember){
         throw new ApiError(400, "Project member not found");
     }
+
 
     projectMember = await ProjectMember.findByIdAndUpdate(
         projectMember._id,
@@ -398,15 +403,18 @@ const updateMemberRole = asyncHandler(async(req, res) => {
 const deleteMember = asyncHandler(async(req, res) => {
     const {projectId, userId} = req.params
 
+    const safeProjectId = assertObjectId(projectId, "projectId");
+    const safeUserId = assertObjectId(userId, "userId");
 
     let projectMember = await ProjectMember.findOne({
-        project: new mongoose.Types.ObjectId(projectId),
-        user: new mongoose.Types.ObjectId(userId)
+        project: safeProjectId,
+        user: safeUserId
     })
 
     if(!projectMember){
         throw new ApiError(400, "Project member not found");
     }
+
 
     projectMember = await ProjectMember.findByIdAndDelete(
         projectMember._id
