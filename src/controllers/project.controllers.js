@@ -440,6 +440,12 @@ const deleteMember = asyncHandler(async(req, res) => {
     const safeProjectId = assertObjectId(projectId, "projectId");
     const safeUserId = assertObjectId(userId, "userId");
 
+    if (String(safeUserId) === String(req.user._id)) {
+        throw new ApiError(
+            400,
+            "You cannot change your own role"
+        );
+    }
     let projectMember = await ProjectMember.findOne({
         project: safeProjectId,
         user: safeUserId
