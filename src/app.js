@@ -76,7 +76,7 @@ app.use(cors({
       if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
       return callback(new ApiError(403, "Origin is not allowed by CORS"));
     },
-
+    
     //allows: cookies, authorization headers, session data
     credentials: true,
 
@@ -86,6 +86,7 @@ app.use(cors({
     //Bearer etc.
     allowedHeaders: ["Content-Type", "Authorization"]
 })); 
+console.log(process.env.CORS_ORIGIN);
 
 
 //import the routes
