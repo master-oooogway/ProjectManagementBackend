@@ -12,97 +12,99 @@ import { assertObjectId } from "../utils/objectid.js";
 
 
 
-const getProjects = asyncHandler(async(req, res) => {
-    //aggregation pipeline takes an array as parameter contains objs
-    // Build an aggregation pipeline on the ProjectMember collection.
-    // Aggregation pipelines are arrays of stages that process documents
-    // sequentially. Each stage is an object beginning with a pipeline
-    // operator like `$match`, `$lookup`, `$unwind`, or `$project`.
+const getProjects = asyncHandler(async (req, res) => {
     const projects = await ProjectMember.aggregate([
-            {
-                // $match: filters input documents. It's like a MongoDB `find`.
-                // Here we limit ProjectMember documents to those for the
-                // authenticated user by comparing the `user` field.
-                $match: {
-                    user: new mongoose.Types.ObjectId(req.user._id)
-                }
-                // once we have the matching ProjectMember documents, the
-                // pipeline continues to the next stage for further processing
-            },
-            {
-                $lookup: {
-                    from: "projects", 
-                    // $lookup performs a left-outer join with the `projects`
-                    // collection. It adds matching project documents to each
-                    // ProjectMember document. `localField` is the field in the
-                    // current collection (ProjectMember) and `foreignField`
-                    // is the field in the `from` collection to match against.
-                    localField: "project",
-                    foreignField: "_id",
-                    as: "project",
-                    // `pipeline` allows additional aggregation stages to be
-                    // executed on the joined (foreign) collection before
-                    // returning results. This lets you compute derived
-                    // values (like member counts) for each joined project.
-                    pipeline: [
-                        {
-                            // Nested $lookup: find all ProjectMember docs
-                            // that reference the joined project. This builds
-                            // an array of members per project so we can count
-                            // them.
-                            $lookup:{
-                                from:"projectmembers",
-                                localField: "_id",
-                                foreignField: "project",
-                                as:"projectmembers"
-                            }
-                        },
-                        {
-                            // $addFields creates or overwrites fields on the
-                            // current document. Here we add a `members` field
-                            // equal to the size of the `projectmembers` array.
-                            $addFields: {
-                                members: {
-                                    $size: "$projectmembers",
+        {
+            $match: {
+                user: new mongoose.Types.ObjectId(req.user._id)
+            }
+        },
+        {
+            $lookup: {
+                from: "projects",
+                localField: "project",
+                foreignField: "_id",
+                as: "project",
+                pipeline: [
+                    {
+                        $lookup: {
+                            from: "projectmembers",
+                            localField: "_id",
+                            foreignField: "project",
+                            as: "projectMembers"
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "createdBy",
+                            foreignField: "_id",
+                            as: "creator",
+                            pipeline: [
+                                {
+                                    $project: {
+                                        _id: 1,
+                                        username: 1,
+                                        fullName: 1,
+                                        avatar: 1
+                                    }
                                 }
+                            ]
+                        }
+                    },
+                    {
+                        $addFields: {
+                            members: {
+                                $size: "$projectMembers"
+                            },
+                            creator: {
+                                $arrayElemAt: ["$creator", 0]
                             }
                         }
-                    ]
-                }
-            },
-            {
-                // $unwind deconstructs an array field, outputting one
-                // document per array element. If the lookup produced an
-                // array of matched projects, $unwind will flatten that
-                // array so subsequent stages see single project objects.
-                $unwind: "$project"
-            },
-            {
-                $project:{
-                    project: {
-                        // $project controls which fields to include or reshape
-                        // in the output documents. A value of `1` includes
-                        // the field. Here we keep common project fields and
-                        // the computed `members` field from the lookup.
-                        _id: 1,
-                        name: 1,
-                        description: 1,
-                        members: 1,
-                        createdAt: 1,
-                        createdBy: 1
                     },
-                    role: 1,
-                    _id: 0
+                    {
+                        $project: {
+                            projectMembers: 0
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $unwind: "$project"
+        },
+        {
+            $project: {
+                _id: 0,
+                role: 1,
+                project: {
+                    _id: "$project._id",
+                    name: "$project.name",
+                    description: "$project.description",
+                    members: "$project.members",
+                    createdAt: "$project.createdAt",
+                    updatedAt: "$project.updatedAt",
+                    creator: "$project.creator"
                 }
             }
-        ]
-    )
-    return res  
+        },
+        {
+            $sort: {
+                "project.createdAt": -1
+            }
+        }
+    ]);
+
+    return res
         .status(200)
         .json(
-            new ApiResponse(200, projects, "Projects fetched successfully")
-        )
-})
+            new ApiResponse(
+                200,
+                projects,
+                "Projects fetched successfully"
+            )
+        );
+});
 
 const getProjectById = asyncHandler(async(req, res) => {
     const {projectId} = req.params
@@ -314,20 +316,22 @@ await ProjectMember.create({
         )
 })
 
-const getProjectMembers = asyncHandler(async(req, res) => {
-    const {projectId}= req.params
-    const safeProjectId = assertObjectId(projectId, "projectId");
-    const project = await Project.findById(safeProjectId)
+const getProjectMembers = asyncHandler(async (req, res) => {
+    const { projectId } = req.params;
 
-    if(!project){
-        throw new ApiError(404, "Project not found")
+    const safeProjectId = assertObjectId(projectId, "projectId");
+
+    const project = await Project.findById(safeProjectId);
+
+    if (!project) {
+        throw new ApiError(404, "Project not found");
     }
 
     const projectMembers = await ProjectMember.aggregate([
         {
             $match: {
-                project: new mongoose.Types.ObjectId(projectId)
-            },
+                project: safeProjectId
+            }
         },
         {
             $lookup: {
@@ -349,29 +353,32 @@ const getProjectMembers = asyncHandler(async(req, res) => {
             }
         },
         {
-            $addFields: {
-                user: {
-                    $arrayElemAt: ["$user", 0]
-                }
-            }
+            $unwind: "$user"
         },
         {
             $project: {
-                project: 1,
-                user: 1,
-                role:1,
-                createdAt: 1,
-                updatedAt: 1,
-                _id: 0
+                _id: 0,
+                role: 1,
+                joinedAt: "$createdAt",
+                user: 1
+            }
+        },
+        {
+            $sort: {
+                role: 1,
+                joinedAt: 1
             }
         }
-    ])
-    return res
-        .status(200)
-        .json(
-            new ApiResponse(200, projectMembers, "Project members fetched")
+    ]);
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            projectMembers,
+            "Project members fetched successfully"
         )
-})
+    );
+});
 
 const getAllProjectMembers = asyncHandler(async (req, res) => {
     const projectMembers = await ProjectMember.aggregate([
