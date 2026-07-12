@@ -157,17 +157,18 @@ const updateProject = asyncHandler(async(req, res) => {
     const {name, description} = req.body
 
     //we are taking projectId from url(params)
-    const {projectId} = req.params
+    const { projectId } = req.params;
 
+    const safeProjectId = assertObjectId(projectId, "projectId");
+    
     const project = await Project.findByIdAndUpdate(
-        //find by project id
-        projectId,
-        //and update
+        safeProjectId,
         {
-            name,description
+            name,
+            description
         },
-        {new: true}
-    )
+        { new: true }
+    );
     if(!project){
         throw new ApiError(404, "Project not found")
     }
