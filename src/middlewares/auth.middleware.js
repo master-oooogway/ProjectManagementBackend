@@ -1,4 +1,3 @@
-import mongoose from "mongoose"
 /**
  * Only authenticated user can access protected routes
  * 
@@ -13,8 +12,8 @@ import mongoose from "mongoose"
  */
 import {User} from "../models/user.models.js"
 import { ProjectMember } from "../models/projectmember.models.js"
-import mongoose from "mongoose";
 import { assertObjectId } from "../utils/objectid.js";
+
 
 
 //Custom error class
