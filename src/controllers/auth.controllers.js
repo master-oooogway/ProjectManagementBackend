@@ -72,11 +72,12 @@ const sendVerificationOtp = async (user, { ignoreCooldown = false } = {}) => {
     console.warn("Email delivery failed; using the OTP fallback.", error.message);
   }
 
-  // When SHOW_EMAIL_OTP is enabled (development) OR the email failed to send,
-  // return the OTP so it can be displayed to the user as a fallback.
-  return process.env.SHOW_EMAIL_OTP === "true" || !emailWasDelivered
-    ? otp
-    : undefined;
+  // Return OTP as fallback only in development mode when SHOW_EMAIL_OTP is enabled
+  // In production, never expose the OTP even if email fails.
+  if (process.env.SHOW_EMAIL_OTP === "true") {
+    return otp;
+  }
+  return undefined;
 };
 
 const registerUser = asyncHandler(async (req, res) => {
