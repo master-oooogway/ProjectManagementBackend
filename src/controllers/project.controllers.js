@@ -242,23 +242,23 @@ const addMembersToProject = asyncHandler(async(req, res) => {
         throw new ApiError(404, "No account found with this email. Ask your teammate to register first.");
     }
 
-    await ProjectMember.findOneAndUpdate(
-        {
-            user: new mongoose.Types.ObjectId(user._id),
-            project: safeProjectId
-        },
-        {
-            user: new mongoose.Types.ObjectId(user._id),
-            project: safeProjectId,
+    const existingMember = await ProjectMember.findOne({
+    user: user._id,
+    project: safeProjectId
+});
 
-            role: role
-        },
-        {
-            new: true,
-            //creates a new document if none of them exists
-            upsert: true
-        }
-    )
+if (existingMember) {
+    throw new ApiError(
+        409,
+        "User is already a member of this project"
+    );
+}
+
+await ProjectMember.create({
+    user: user._id,
+    project: safeProjectId,
+    role
+});
 
     return res
         .status(201)
