@@ -106,70 +106,83 @@ const getProjects = asyncHandler(async (req, res) => {
         );
 });
 
-const getProjectById = asyncHandler(async(req, res) => {
-    const {projectId} = req.params
+const getProjectById = asyncHandler(async (req, res) => {
+    const { projectId } = req.params;
+
     const safeProjectId = assertObjectId(projectId, "projectId");
+
     const project = await Project.aggregate([
-    {
-        $match: {
-            _id: safeProjectId
-        }
-    },
-    {
-        $lookup: {
-            from: "projectmembers",
-            localField: "_id",
-            foreignField: "project",
-            as: "members"
-        }
-    },
-    {
-        $lookup: {
-            from: "users",
-            localField: "createdBy",
-            foreignField: "_id",
-            as: "creator",
-            pipeline: [
-                {
-                    $project: {
-                        _id: 1,
-                        fullName: 1,
-                        username: 1,
-                        email: 1
+        {
+            $match: {
+                _id: safeProjectId
+            }
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "createdBy",
+                foreignField: "_id",
+                as: "creator",
+                pipeline: [
+                    {
+                        $project: {
+                            _id: 1,
+                            username: 1,
+                            fullName: 1,
+                            avatar: 1,
+                            email: 1
+                        }
                     }
+                ]
+            }
+        },
+        {
+            $lookup: {
+                from: "projectmembers",
+                localField: "_id",
+                foreignField: "project",
+                as: "members"
+            }
+        },
+        {
+            $addFields: {
+                memberCount: {
+                    $size: "$members"
+                },
+                creator: {
+                    $arrayElemAt: ["$creator", 0]
                 }
-            ]
-        }
-    },
-    {
-        $addFields: {
-            memberCount: {
-                $size: "$members"
-            },
-            creator: {
-                $arrayElemAt: ["$creator", 0]
+            }
+        },
+        {
+            $project: {
+                members: 0
             }
         }
-    },
-    {
-        $project: {
-            members: 0
-        }
-    }
-]);
-    if(!project.length){
-        throw new ApiError(404, "Project not found")
+    ]);
+
+    if (!project.length) {
+        throw new ApiError(404, "Project not found");
     }
 
-    return res
-        .status(200)
-        .json(
-            new ApiResponse(200,
-                project[0],
-                "Project fetched successfully"
-            )
+    const currentMember = await ProjectMember.findOne({
+        project: safeProjectId,
+        user: req.user._id
+    }).select("role");
+
+    const response = {
+        ...project[0],
+        currentUserRole: currentMember?.role || null
+    };
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            response,
+            "Project fetched successfully"
         )
-})
+    );
+});
 
 const createProject = asyncHandler(async (req, res) => {
     const { name, description } = req.body;
