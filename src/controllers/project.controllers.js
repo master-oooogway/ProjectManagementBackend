@@ -394,6 +394,7 @@ const getProjectMembers = asyncHandler(async (req, res) => {
 });
 
 const getAllProjectMembers = asyncHandler(async (req, res) => {
+     console.log("GET ALL MEMBERS HIT");
     const projectMembers = await ProjectMember.aggregate([
         {
             $lookup: {

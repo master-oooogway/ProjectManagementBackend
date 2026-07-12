@@ -32,6 +32,10 @@ router
   .post(createProjectValidator(), validate, createProject);
 
 router
+  .route("/members")
+  .get(getAllProjectMembers);
+
+router
   .route("/:projectId")
   .get(validateProjectPermission(AvailableUserRole), getProjectById)
   .put(
@@ -51,11 +55,6 @@ router
     validate,
     addMembersToProject,
   );
-
-router
-  .route("/members")
-  .get(getAllProjectMembers);
-
 
 router
   .route("/:projectId/members/:userId")
