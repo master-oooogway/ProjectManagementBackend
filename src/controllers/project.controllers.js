@@ -183,15 +183,32 @@ const updateProject = asyncHandler(async(req, res) => {
 })
 
 const deleteProject = asyncHandler(async(req, res) => {
-    const {projectId} = req.params
-    const project = await Project.findByIdAndDelete(projectId);
-    if(!project){
-        throw new ApiError(404, "Project not found")
+    const { projectId } = req.params;
+
+    const safeProjectId = assertObjectId(projectId, "projectId");
+
+    const project = await Project.findById(safeProjectId);
+
+    if (!project) {
+        throw new ApiError(404, "Project not found");
     }
+
+    await ProjectMember.deleteMany({
+        project: safeProjectId
+    });
+
+    await Project.findByIdAndDelete(safeProjectId);
+
     return res
         .status(200)
-        .json(new ApiResponse(200, project, "Project deleted successfully"))
-})
+        .json(
+            new ApiResponse(
+                200,
+                project,
+                "Project deleted successfully"
+            )
+        );
+});
 
 const addMembersToProject = asyncHandler(async(req, res) => {
     const {email, role} = req.body
