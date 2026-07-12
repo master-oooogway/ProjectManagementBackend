@@ -331,6 +331,7 @@ const getAllProjectMembers = asyncHandler(async (req, res) => {
         {
             $project: {
                 _id: 0,
+                // Keep as plain values coming from lookup results.
                 userId: "$user._id",
                 name: { $ifNull: ["$user.fullName", "$user.username"] },
                 email: "$user.email",
@@ -349,6 +350,8 @@ const getAllProjectMembers = asyncHandler(async (req, res) => {
             new ApiResponse(200, projectMembers, "All project members fetched")
         )
 })
+
+
 
 
 const updateMemberRole = asyncHandler(async(req, res) => {
