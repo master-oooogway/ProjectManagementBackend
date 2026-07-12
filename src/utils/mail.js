@@ -38,12 +38,14 @@ const sendEmail = async (options) => {
     };
 
     if (service) {
+        // When service is set (e.g. "gmail"), nodemailer uses its built-in defaults.
+        // Do NOT override host/port manually to avoid conflicts.
         transporterOptions.service = service;
+    } else {
+        transporterOptions.host = host;
+        transporterOptions.port = port;
+        transporterOptions.secure = secure;
     }
-
-    transporterOptions.host = host;
-    transporterOptions.port = port;
-    transporterOptions.secure = secure;
 
     const transporter = nodemailer.createTransport(transporterOptions);
 
