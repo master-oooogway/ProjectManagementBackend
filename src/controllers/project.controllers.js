@@ -299,10 +299,9 @@ const getAllProjectMembers = asyncHandler(async (req, res) => {
             }
         },
         {
-            $addFields: {
-                user: {
-                    $arrayElemAt: ["$user", 0]
-                }
+            $unwind: {
+                path: "$user",
+                preserveNullAndEmptyArrays: true,
             }
         },
         {
@@ -322,16 +321,14 @@ const getAllProjectMembers = asyncHandler(async (req, res) => {
             }
         },
         {
-            $addFields: {
-                project: {
-                    $arrayElemAt: ["$project", 0]
-                }
+            $unwind: {
+                path: "$project",
+                preserveNullAndEmptyArrays: true,
             }
         },
         {
             $project: {
                 _id: 0,
-                // Keep as plain values coming from lookup results.
                 userId: "$user._id",
                 name: { $ifNull: ["$user.fullName", "$user.username"] },
                 email: "$user.email",
@@ -350,6 +347,7 @@ const getAllProjectMembers = asyncHandler(async (req, res) => {
             new ApiResponse(200, projectMembers, "All project members fetched")
         )
 })
+
 
 
 
