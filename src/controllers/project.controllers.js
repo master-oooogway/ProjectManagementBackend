@@ -291,7 +291,7 @@ const updateMemberRole = asyncHandler(async(req, res) => {
     })
 
     if(!projectMember){
-        throw new ApiResponse(400, "Project member not found");
+        throw new ApiError(400, "Project member not found");
     }
 
     projectMember = await ProjectMember.findByIdAndUpdate(
@@ -325,7 +325,7 @@ const deleteMember = asyncHandler(async(req, res) => {
     }
 
     projectMember = await ProjectMember.findByIdAndDelete(
-        projectMember._id,
+        projectMember._id
     )
     if(!projectMember){
         throw new ApiError(400, "Project member not found");

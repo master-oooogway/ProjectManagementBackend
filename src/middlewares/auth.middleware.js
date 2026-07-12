@@ -39,7 +39,7 @@ export const verifyJWT = asyncHandler(async(req, res, next)=>{
      * ? -> because if req.cookies does not exists it can crash...use of ? returns undefined
      * Browser: Cookies, Postman: Authorization Header, Mobile Apps: Authorization Header
      */
-    const token = req.cookies?.accessToken || req.header("Authorization")?. replace("Bearer ","")
+    const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "")
 
     if(!token){
         /**user not logged in or token expired or frontend forgot to send cookie */

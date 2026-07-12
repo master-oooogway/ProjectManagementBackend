@@ -5,8 +5,8 @@ const sendEmail = async (options) => {
     const mailGenerator = new Mailgen({
         theme: "default",
         product: {
-            name: "Task Manager",
-            link: "https://taskmanagelink.com"
+            name: "ProjectCamp",
+            link: "https://ssipmt.com"
         }
     })
 
@@ -15,15 +15,15 @@ const sendEmail = async (options) => {
     const emailHtml = mailGenerator.generate(options.mailgenContent)
 
     const service = process.env.SMTP_SERVICE;
-    const host = process.env.SMTP_HOST || (service === "gmail" ? "smtp.gmail.com" : process.env.MAILTRAP_SMTP_HOST);
-    const port = Number(process.env.SMTP_PORT || process.env.MAILTRAP_SMTP_PORT || 587);
-    const user = process.env.SMTP_USER || process.env.MAILTRAP_SMTP_USER;
-    const pass = process.env.SMTP_PASS || process.env.MAILTRAP_SMTP_PASS;
+    const host = process.env.SMTP_HOST || "smtp.gmail.com";
+    const port = Number(process.env.SMTP_PORT || 587);
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASS;
     const secure = process.env.SMTP_SECURE === "true" || port === 465;
 
     if (!user || !pass || !host) {
         throw new Error(
-            "SMTP is not configured correctly. Set SMTP_USER and SMTP_PASS for Gmail or MAILTRAP_SMTP_USER and MAILTRAP_SMTP_PASS for Mailtrap."
+            "SMTP is not configured correctly. Set SMTP_USER and SMTP_PASS in your .env file."
         );
     }
 
@@ -48,7 +48,7 @@ const sendEmail = async (options) => {
     const transporter = nodemailer.createTransport(transporterOptions);
 
     const mail = {
-        from: process.env.EMAIL_FROM || process.env.SMTP_USER || "ProjectCamp <no-reply@projectcamp.com>",
+        from: process.env.EMAIL_FROM || process.env.SMTP_USER || "ProjectCamp <noreply@ssipmt.com>",
         to: options.email,
         subject: options.subject,
         text: emailTextual,
