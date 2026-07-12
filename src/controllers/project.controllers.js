@@ -408,7 +408,7 @@ const updateMemberRole = asyncHandler(async(req, res) => {
             project: safeProjectId,
             role: UserRolesEnum.ADMIN
         });
-    
+
         if (adminCount <= 1) {
             throw new ApiError(
                 400,
@@ -445,6 +445,12 @@ const deleteMember = asyncHandler(async(req, res) => {
         user: safeUserId
     })
 
+    if (String(safeUserId) === String(req.user._id)) {
+        throw new ApiError(
+            400,
+            "You cannot remove yourself from the project"
+        );
+    }
     if (projectMember.role === UserRolesEnum.ADMIN) {
 
         const adminCount = await ProjectMember.countDocuments({
