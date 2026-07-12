@@ -106,6 +106,11 @@ app.use("/api/v1/projects", projectRouter);
 app.use("/api/v1/tasks", taskRouter);
 app.use("/api/v1/notes", noteRouter);
 
+/** 
+ * GET: Used to fetch data
+ */
+app.get("/", (req, res) => res.json({ success: true, message: "ProjectCamp API is running" }));
+
 app.use((req, res, next) => {
   next(new ApiError(404, "Resource not found"));
 });
@@ -122,16 +127,5 @@ app.use((err, req, res, next) => {
     errors: err.errors || [],
   });
 });
-
-
-/** 
- * GET: Used to fetch data
-*/
-
-
-
-
-
-app.get("/", (req, res) => res.json({ success: true, message: "ProjectCamp API is running" }));
 
 export default app;
