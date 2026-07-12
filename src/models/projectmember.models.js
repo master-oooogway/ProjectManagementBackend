@@ -18,5 +18,13 @@ const projectMemberSchema = new Schema({
         default: UserRolesEnum.MEMBER
     }
 }, {timestamps: true})
-
+projectMemberSchema.index(
+    {
+        user: 1,
+        project: 1
+    },
+    {
+        unique: true
+    }
+);
 export const ProjectMember = mongoose.model("ProjectMember", projectMemberSchema)
